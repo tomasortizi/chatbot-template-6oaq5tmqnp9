@@ -36,7 +36,7 @@ else:
         data = pd.read_csv(url)
         return data
 
-    url = "https://raw.githubusercontent.com/tomasortizi/chatbot-template-6oaq5tmqnp9/main/departamentos_en_venta.csv"
+    url = "https://raw.githubusercontent.com/tomasortizi/chatbot-template-6oaq5tmqnp9/main/departamentos_en_venta.csv
     departamentos = load_data(url)
 
     # Validar las columnas del archivo CSV
