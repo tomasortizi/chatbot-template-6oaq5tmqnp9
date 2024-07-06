@@ -61,7 +61,9 @@ else:
             else:
                 # Añadir una columna para el arriendo promedio si no existe.
                 if "Arriendo Promedio" not in departamentos.columns:
-                    departamentos["Arriendo Promedio"] = [500000, 700000]  # Valores ficticios.
+                    # Generar valores ficticios basados en el tamaño del DataFrame
+                    departamentos["Arriendo Promedio"] = [500000 + i * 10000 for i in range(len(departamentos))]
+
 
                 # Calculamos el dividendo y la rentabilidad.
                 departamentos["Pie (UF)"] = pie_uf
