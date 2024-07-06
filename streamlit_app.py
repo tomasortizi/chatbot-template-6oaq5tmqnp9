@@ -12,9 +12,6 @@ st.write(
 pie_uf = st.number_input("¿Cuánto pie puedes pagar en UF?", min_value=0.0, step=0.1)
 dividendo_clp = st.number_input("¿Cuánto dividendo esperas pagar mensualmente en CLP?", min_value=0.0, step=10000.0)
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
 # Usar la clave API de OpenAI directamente
 openai_api_key = "sk-proj-pnAu1TBQTk8oVyxjtHPYT3BlbkFJMt2WwSuQazHlEDejVf6G"
 if not openai_api_key:
@@ -30,121 +27,77 @@ else:
 
     # Definir los nombres de columnas esperados
     expected_columns = ["Precio", "Metros Cuadrados", "Dormitorios", "Baños", "Link"]
-    expected_columns_rent = ["Precio", "Metros Cuadrados", "Dormitorios", "Baños", "Link"]
 
     # Cargar base de datos de departamentos desde GitHub.
     @st.cache_data
     def load_data(url):
-        try:
-            data = pd.read_csv(url)
-            return data
-        except Exception as e:
-            st.error(f"Error al cargar los datos: {e}")
-            return None
+        data = pd.read_csv(url)
+        return data
 
-    url_sales = "https://raw.githubusercontent.com/tomasortizi/chatbot-template-6oaq5tmqnp9/main/departamentos_en_venta.csv"
-    url_rent = "https://raw.githubusercontent.com/tomasortizi/chatbot-template-6oaq5tmqnp9/main/departamentos_en_arriendo.csv"
-    
-    departamentos_venta = load_data(url_sales)
-    departamentos_arriendo = load_data(url_rent)
+    url = "https://raw.githubusercontent.com/usuario/repositorio/main/departamentos.csv"
+    departamentos = load_data(url)
 
-    if departamentos_venta is not None and departamentos_arriendo is not None:
-        # Validar las columnas del archivo CSV de ventas
-        if all(column in departamentos_venta.columns for column in expected_columns):
-            # Validar las columnas del archivo CSV de arriendo
-            if all(column in departamentos_arriendo.columns for column in expected_columns_rent):
-                
-                # Asegurarse de que los valores de pie_uf y dividendo_clp sean del mismo tipo que la columna Precio
-                if pie_uf is not None and dividendo_clp is not None:
-                    try:
-                        pie_uf = float(pie_uf)
-                        dividendo_clp = float(dividendo_clp)
-                    except ValueError:
-                        st.error("Los valores de pie y dividendo no son compatibles con el tipo de datos de los precios en la base de datos.")
-                        st.stop()
-                else:
-                    st.error("Por favor, ingresa valores válidos para el pie y el dividendo esperado.")
-                    st.stop()
+    # Mostrar columnas del CSV para depuración
+    st.write("Columnas encontradas en el archivo CSV:", list(departamentos.columns))
 
-                # Simulación de tasa de crédito hipotecario (normalmente se obtendría de `www.siii.cl`).
-                tasa_credito = 0.048  # 4.8% anual
-
-                def calcular_dividendo(precio, pie, tasa, años=25):
-                    monto_credito = precio - pie
-                    tasa_mensual = tasa / 12
-                    meses = años * 12
-                    dividendo = (monto_credito * tasa_mensual) / (1 - (1 + tasa_mensual) ** -meses)
-                    return dividendo
-
-                # Convertir valores a numéricos y manejar valores nulos
-                departamentos_venta["Precio"] = pd.to_numeric(departamentos_venta["Precio"], errors='coerce')
-                departamentos_venta["Metros Cuadrados"] = pd.to_numeric(departamentos_venta["Metros Cuadrados"], errors='coerce')
-                departamentos_venta.dropna(subset=["Precio", "Metros Cuadrados"], inplace=True)
-                
-                departamentos_arriendo["Precio"] = pd.to_numeric(departamentos_arriendo["Precio"], errors='coerce')
-                departamentos_arriendo["Metros Cuadrados"] = pd.to_numeric(departamentos_arriendo["Metros Cuadrados"], errors='coerce')
-                departamentos_arriendo.dropna(subset=["Precio", "Metros Cuadrados"], inplace=True)
-
-                # Añadir columna con valor de arriendo aproximado en UF y UF/m2 al dataset de arriendo
-                multiplicador_arriendo = 220
-                departamentos_arriendo["Arriendo UF"] = departamentos_arriendo["Precio"] / multiplicador_arriendo
-                departamentos_arriendo["UF/m2"] = departamentos_arriendo["Arriendo UF"] / departamentos_arriendo["Metros Cuadrados"]
-
-                # Añadir columna de UF/m2 al dataset de ventas
-                departamentos_venta["UF/m2"] = departamentos_venta["Precio"] / departamentos_venta["Metros Cuadrados"]
-
-                # Botón para iniciar la búsqueda de departamentos
-                if st.button("Buscar Departamentos"):
-                    if pie_uf <= 0 or dividendo_clp <= 0:
-                        st.error("Por favor, ingresa valores positivos para el pie y el dividendo esperado.")
-                    else:
-                        # Calcular dividendo y rentabilidad en el dataset de ventas
-                        departamentos_venta["Pie (UF)"] = pie_uf
-                        departamentos_venta["Dividendo Mensual (UF)"] = departamentos_venta["Precio"].apply(lambda x: calcular_dividendo(x, pie_uf, tasa_credito))
-                        departamentos_venta["Dividendo Mensual (CLP)"] = departamentos_venta["Dividendo Mensual (UF)"] * 30000  # Asumimos UF a CLP es 30,000.
-
-                        # Filtrar y comparar departamentos de arriendo y venta por valores UF/m2 similares
-                        resultados_comparativos = []
-                        for _, row_venta in departamentos_venta.iterrows():
-                            uf_m2_venta = row_venta["UF/m2"]
-                            comparables = departamentos_arriendo[
-                                departamentos_arriendo["UF/m2"].between(uf_m2_venta * 0.95, uf_m2_venta * 1.05)
-                            ]
-                            for _, row_arriendo in comparables.iterrows():
-                                rentabilidad = ((row_arriendo["Arriendo UF"] - row_venta["Dividendo Mensual (UF)"]) / row_venta["Dividendo Mensual (UF)"]) * 100
-                                resultados_comparativos.append({
-                                    "Venta Link": row_venta["Link"],
-                                    "Arriendo Link": row_arriendo["Link"],
-                                    "UF/m2 Venta": uf_m2_venta,
-                                    "UF/m2 Arriendo": row_arriendo["UF/m2"],
-                                    "Dividendo Mensual (UF)": row_venta["Dividendo Mensual (UF)"],
-                                    "Arriendo Mensual (UF)": row_arriendo["Arriendo UF"],
-                                    "Rentabilidad (%)": rentabilidad,
-                                    **{f"Arriendo {col}": row_arriendo[col] for col in expected_columns_rent}  # Añadir todos los datos del departamento de arriendo
-                                })
-
-                        # Convertir los resultados a un DataFrame
-                        resultados_df = pd.DataFrame(resultados_comparativos)
-
-                        # Mostrar resultados.
-                        st.write(resultados_df)
-
-                        # Permitir la descarga de los resultados.
-                        st.download_button(
-                            label="Descargar Resultados",
-                            data=resultados_df.to_csv(index=False).encode('utf-8'),
-                            file_name='resultados_departamentos_comparativos.csv',
-                            mime='text/csv'
-                        )
-            else:
-                st.error(f"El archivo CSV de arriendo debe contener las siguientes columnas: {', '.join(expected_columns_rent)}")
-                st.write("Columnas faltantes:", [col for col in expected_columns_rent if col not in departamentos_arriendo.columns])
-                st.write("Columnas adicionales:", [col for col in departamentos_arriendo.columns if col not in expected_columns_rent])
+    # Validar las columnas del archivo CSV
+    if all(column in departamentos.columns for column in expected_columns):
+        # Asegurarse de que los valores de pie_uf y dividendo_clp sean del mismo tipo que la columna Precio
+        if pie_uf is not None and dividendo_clp is not None:
+            try:
+                pie_uf = type(departamentos["Precio"].iloc[0])(pie_uf)
+                dividendo_clp = type(departamentos["Precio"].iloc[0])(dividendo_clp)
+            except ValueError:
+                st.error("Los valores de pie y dividendo no son compatibles con el tipo de datos de los precios en la base de datos.")
+                st.stop()
         else:
-            st.error(f"El archivo CSV de ventas debe contener las siguientes columnas: {', '.join(expected_columns)}")
-            st.write("Columnas faltantes:", [col for col in expected_columns if col not in departamentos_venta.columns])
-            st.write("Columnas adicionales:", [col for col in departamentos_venta.columns if col not in expected_columns])
-    
+            st.error("Por favor, ingresa valores válidos para el pie y el dividendo esperado.")
+            st.stop()
+
+        # Simulación de tasa de crédito hipotecario (normalmente se obtendría de `www.siii.cl`).
+        tasa_credito = 0.04  # 4% anual
+
+        def calcular_dividendo(precio, pie, tasa, años=25):
+            monto_credito = precio - pie
+            tasa_mensual = tasa / 12
+            meses = años * 12
+            dividendo = (monto_credito * tasa_mensual) / (1 - (1 + tasa_mensual) ** -meses)
+            return dividendo
+
+        # Botón para iniciar la búsqueda de departamentos
+        if st.button("Buscar Departamentos"):
+            if pie_uf <= 0 or dividendo_clp <= 0:
+                st.error("Por favor, ingresa valores positivos para el pie y el dividendo esperado.")
+            else:
+                # Añadir una columna para el arriendo promedio si no existe.
+                if "Arriendo Promedio" not in departamentos.columns:
+                    # Generar valores ficticios basados en el tamaño del DataFrame
+                    departamentos["Arriendo Promedio"] = [500000 + i * 10000 for i in range(len(departamentos))]
+
+                # Calculamos el dividendo y la rentabilidad.
+                departamentos["Pie (UF)"] = pie_uf
+                departamentos["Dividendo Mensual (UF)"] = departamentos["Precio"].apply(lambda x: calcular_dividendo(x, pie_uf, tasa_credito))
+                departamentos["Dividendo Mensual (CLP)"] = departamentos["Dividendo Mensual (UF)"] * 30000  # Asumimos UF a CLP es 30,000.
+                departamentos["Rentabilidad (%)"] = ((departamentos["Arriendo Promedio"] * 12) / (departamentos["Precio"] * 30000)) * 100
+
+                # Filtrar por rentabilidad y que el arriendo sea mayor al dividendo.
+                resultados = departamentos[(departamentos["Arriendo Promedio"] > departamentos["Dividendo Mensual (CLP)"])]
+
+                # Mostrar resultados.
+                st.write(resultados)
+
+                # Permitir la descarga de los resultados.
+                st.download_button(
+                    label="Descargar Resultados",
+                    data=resultados.to_csv(index=False).encode('utf-8'),
+                    file_name='resultados_departamentos.csv',
+                    mime='text/csv'
+                )
+    else:
+        st.error(f"El archivo CSV debe contener las siguientes columnas: {', '.join(expected_columns)}")
+        st.write("Columnas faltantes:", [col for col in expected_columns if col not in departamentos.columns])
+        st.write("Columnas adicionales:", [col for col in departamentos.columns if col not in expected_columns])
+
     # Crear una sección de chat para interactuar con el usuario
     if prompt := st.chat_input("¿Qué más te gustaría saber?"):
         # Store and display the current prompt.
@@ -153,18 +106,15 @@ else:
             st.markdown(prompt)
 
         # Generate a response using the OpenAI API.
-        try:
-            response = client.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": m["role"], "content": m["content"]}
-                    for m in st.session_state.messages
-                ]
-            )
+        response = client.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": m["role"], "content": m["content"]}
+                for m in st.session_state.messages
+            ]
+        )
 
-            # Stream the response to the chat and store it in session state.
-            with st.chat_message("assistant"):
-                st.markdown(response.choices[0].message['content'])
-            st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message['content']})
-        except Exception as e:
-            st.error(f"Error al generar respuesta de OpenAI: {e}")
+        # Stream the response to the chat and store it in session state.
+        with st.chat_message("assistant"):
+            st.markdown(response.choices[0].message['content'])
+        st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message['content']})
