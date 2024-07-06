@@ -15,8 +15,8 @@ dividendo_clp = st.number_input("¿Cuánto dividendo esperas pagar mensualmente 
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
 # via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.secrets["sk-proj-pnAu1TBQTk8oVyxjtHPYT3BlbkFJMt2WwSuQazHlEDejVf6G"] if "openai_api_key" in st.secrets else None
-
+# Usar la clave API de OpenAI directamente
+openai_api_key = "sk-proj-pnAu1TBQTk8oVyxjtHPYT3BlbkFJMt2WwSuQazHlEDejVf6G"
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
 else:
