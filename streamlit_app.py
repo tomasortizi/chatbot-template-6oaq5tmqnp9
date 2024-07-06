@@ -44,6 +44,14 @@ else:
 
     # Validar las columnas del archivo CSV
     if all(column in departamentos.columns for column in expected_columns):
+        # Asegurarse de que los valores de pie_uf y dividendo_clp sean del mismo tipo que la columna Precio
+        try:
+            pie_uf = type(departamentos["Precio"].iloc[0])(pie_uf)
+            dividendo_clp = type(departamentos["Precio"].iloc[0])(dividendo_clp)
+        except ValueError:
+            st.error("Los valores de pie y dividendo no son compatibles con el tipo de datos de los precios en la base de datos.")
+            st.stop()
+
         # Simulación de tasa de crédito hipotecario (normalmente se obtendría de `www.siii.cl`).
         tasa_credito = 0.04  # 4% anual
 
@@ -56,10 +64,9 @@ else:
 
         # Botón para iniciar la búsqueda de departamentos
         if st.button("Buscar Departamentos"):
-            if not pie_uf or not dividendo_clp:
-                st.error("Por favor, ingresa tanto el pie como el dividendo esperado.")
+            if pie_uf is None or pie_uf <= 0 or dividendo_clp is None or dividendo_clp <= 0:
+                st.error("Por favor, ingresa valores válidos para el pie y el dividendo esperado.")
             else:
-                pie_uf = float(pie_uf)  # Asegurarse de que pie_uf sea de tipo float
                 # Añadir una columna para el arriendo promedio si no existe.
                 if "Arriendo Promedio" not in departamentos.columns:
                     # Generar valores ficticios basados en el tamaño del DataFrame
