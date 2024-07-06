@@ -4,7 +4,7 @@ from openai import OpenAI
 from openai.error import OpenAIError
 
 # URL del archivo CSV en GitHub
-csv_url = 'https://raw.githubusercontent.com/usuario/repositorio/rama/archivo.csv'
+csv_url = 'https://github.com/tomasortizi/chatbot-template-6oaq5tmqnp9/blob/747f5c4d555f37c0b1132e1a6b74ad62a65526db/departamentos_en_venta.csv'
 
 # Mostrar título y descripción.
 st.title("💬 Chatbot de Inversiones Inmobiliarias en Santiago")
@@ -24,7 +24,7 @@ def load_data(url):
 departamentos = load_data(csv_url)
 
 # Simulación de tasa de crédito hipotecario (normalmente se obtendría de `www.siii.cl`).
-tasa_credito = 0.04  # 4% anual
+tasa_credito = 0.048  # 4% anual
 
 def calcular_dividendo(precio, pie, tasa, años=25):
     monto_credito = precio - pie
