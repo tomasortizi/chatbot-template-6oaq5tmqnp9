@@ -30,7 +30,7 @@ else:
     # Cargar base de datos de departamentos desde GitHub.
     @st.cache_data
     def load_data():
-        url = "https://github.com/tomasortizi/chatbot-template-6oaq5tmqnp9/blob/01949182ef572273448389b63774a1ff58543f8c/departamentos_en_venta.csv"
+        url = "https://raw.githubusercontent.com/tomasortizi/chatbot-template-6oaq5tmqnp9/main/departamentos_en_venta.csv"
         return pd.read_csv(url)
 
     departamentos = load_data()
