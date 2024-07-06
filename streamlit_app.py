@@ -39,6 +39,9 @@ else:
     url = "https://raw.githubusercontent.com/tomasortizi/chatbot-template-6oaq5tmqnp9/main/departamentos_en_venta.csv"
     departamentos = load_data(url)
 
+    # Mostrar columnas del CSV para depuración
+    st.write("Columnas encontradas en el archivo CSV:", list(departamentos.columns))
+
     # Validar las columnas del archivo CSV
     if all(column in departamentos.columns for column in expected_columns):
         # Simulación de tasa de crédito hipotecario (normalmente se obtendría de `www.siii.cl`).
@@ -81,6 +84,8 @@ else:
                 )
     else:
         st.error(f"El archivo CSV debe contener las siguientes columnas: {', '.join(expected_columns)}")
+        st.write("Columnas faltantes:", [col for col in expected_columns if col not in departamentos.columns])
+        st.write("Columnas adicionales:", [col for col in departamentos.columns if col not in expected_columns])
 
     # Crear una sección de chat para interactuar con el usuario
     if prompt := st.chat_input("¿Qué más te gustaría saber?"):
