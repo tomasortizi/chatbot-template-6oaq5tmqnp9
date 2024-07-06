@@ -27,9 +27,6 @@ else:
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Definir los nombres de columnas esperados
-    expected_columns = ["Precio", "Metros Cuadrados", "Dormitorios", "Baños", "Link"]
-
     # Cargar base de datos de departamentos desde GitHub.
     @st.cache_data
     def load_data(url):
@@ -57,7 +54,7 @@ else:
             st.stop()
 
         # Simulación de tasa de crédito hipotecario (normalmente se obtendría de `www.siii.cl`).
-        tasa_credito = 0.04  # 4% anual
+        tasa_credito = 0.048  # 4% anual
 
         def calcular_dividendo(precio, pie, tasa, años=25):
             monto_credito = precio - pie
