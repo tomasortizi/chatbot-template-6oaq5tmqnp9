@@ -15,8 +15,8 @@ dividendo_clp = st.number_input("¿Cuánto dividendo esperas pagar mensualmente 
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
 # via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-# Usar la clave API de OpenAI directamente
-openai_api_key = "sk-proj-fw1qCdqAYdEuLwq6cHJRT3BlbkFJ12Hjuv4DEdunGEYT5YJJ"
+openai_api_key = st.secrets["sk-proj-pnAu1TBQTk8oVyxjtHPYT3BlbkFJMt2WwSuQazHlEDejVf6G"] if "openai_api_key" in st.secrets else None
+
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
 else:
@@ -57,8 +57,8 @@ else:
                 # Asegurarse de que los valores de pie_uf y dividendo_clp sean del mismo tipo que la columna Precio
                 if pie_uf is not None and dividendo_clp is not None:
                     try:
-                        pie_uf = type(departamentos_venta["Precio"].iloc[0])(pie_uf)
-                        dividendo_clp = type(departamentos_venta["Precio"].iloc[0])(dividendo_clp)
+                        pie_uf = float(pie_uf)
+                        dividendo_clp = float(dividendo_clp)
                     except ValueError:
                         st.error("Los valores de pie y dividendo no son compatibles con el tipo de datos de los precios en la base de datos.")
                         st.stop()
@@ -76,6 +76,15 @@ else:
                     dividendo = (monto_credito * tasa_mensual) / (1 - (1 + tasa_mensual) ** -meses)
                     return dividendo
 
+                # Convertir valores a numéricos y manejar valores nulos
+                departamentos_venta["Precio"] = pd.to_numeric(departamentos_venta["Precio"], errors='coerce')
+                departamentos_venta["Metros Cuadrados"] = pd.to_numeric(departamentos_venta["Metros Cuadrados"], errors='coerce')
+                departamentos_venta.dropna(subset=["Precio", "Metros Cuadrados"], inplace=True)
+                
+                departamentos_arriendo["Precio"] = pd.to_numeric(departamentos_arriendo["Precio"], errors='coerce')
+                departamentos_arriendo["Metros Cuadrados"] = pd.to_numeric(departamentos_arriendo["Metros Cuadrados"], errors='coerce')
+                departamentos_arriendo.dropna(subset=["Precio", "Metros Cuadrados"], inplace=True)
+
                 # Añadir columna con valor de arriendo aproximado en UF y UF/m2 al dataset de arriendo
                 multiplicador_arriendo = 220
                 departamentos_arriendo["Arriendo UF"] = departamentos_arriendo["Precio"] / multiplicador_arriendo
@@ -92,7 +101,7 @@ else:
                         # Calcular dividendo y rentabilidad en el dataset de ventas
                         departamentos_venta["Pie (UF)"] = pie_uf
                         departamentos_venta["Dividendo Mensual (UF)"] = departamentos_venta["Precio"].apply(lambda x: calcular_dividendo(x, pie_uf, tasa_credito))
-                        departamentos_venta["Dividendo Mensual (CLP)"] = departamentos_venta["Dividendo Mensual (UF)"] * 37500  # Asumimos UF a CLP es 30,000.
+                        departamentos_venta["Dividendo Mensual (CLP)"] = departamentos_venta["Dividendo Mensual (UF)"] * 30000  # Asumimos UF a CLP es 30,000.
 
                         # Filtrar y comparar departamentos de arriendo y venta por valores UF/m2 similares
                         resultados_comparativos = []
@@ -103,20 +112,16 @@ else:
                             ]
                             for _, row_arriendo in comparables.iterrows():
                                 rentabilidad = ((row_arriendo["Arriendo UF"] - row_venta["Dividendo Mensual (UF)"]) / row_venta["Dividendo Mensual (UF)"]) * 100
-                                resultado = {
+                                resultados_comparativos.append({
                                     "Venta Link": row_venta["Link"],
-                                    "UF/m2 Venta": uf_m2_venta,
-                                    "Dividendo Mensual (UF)": row_venta["Dividendo Mensual (UF)"],
-                                    "Rentabilidad (%)": rentabilidad,
                                     "Arriendo Link": row_arriendo["Link"],
-                                    "Precio Arriendo": row_arriendo["Precio"],
-                                    "Metros Cuadrados Arriendo": row_arriendo["Metros Cuadrados"],
-                                    "Dormitorios Arriendo": row_arriendo["Dormitorios"],
-                                    "Baños Arriendo": row_arriendo["Baños"],
-                                    "Arriendo UF": row_arriendo["Arriendo UF"],
-                                    "UF/m2 Arriendo": row_arriendo["UF/m2"]
-                                }
-                                resultados_comparativos.append(resultado)
+                                    "UF/m2 Venta": uf_m2_venta,
+                                    "UF/m2 Arriendo": row_arriendo["UF/m2"],
+                                    "Dividendo Mensual (UF)": row_venta["Dividendo Mensual (UF)"],
+                                    "Arriendo Mensual (UF)": row_arriendo["Arriendo UF"],
+                                    "Rentabilidad (%)": rentabilidad,
+                                    **{f"Arriendo {col}": row_arriendo[col] for col in expected_columns_rent}  # Añadir todos los datos del departamento de arriendo
+                                })
 
                         # Convertir los resultados a un DataFrame
                         resultados_df = pd.DataFrame(resultados_comparativos)
