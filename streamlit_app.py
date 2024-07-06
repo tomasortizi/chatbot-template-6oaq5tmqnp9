@@ -27,52 +27,60 @@ else:
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
+    # Definir los nombres de columnas esperados
+    expected_columns = ["Precio", "Metros Cuadrados", "Dormitorios", "Baños", "Link"]
+
     # Cargar base de datos de departamentos desde GitHub.
     @st.cache_data
-    def load_data():
-        url = "https://raw.githubusercontent.com/tomasortizi/chatbot-template-6oaq5tmqnp9/main/departamentos_en_venta.csv"
-        return pd.read_csv(url)
+    def load_data(url):
+        data = pd.read_csv(url)
+        return data
 
-    departamentos = load_data()
+    url = "https://raw.githubusercontent.com/tomasortizi/chatbot-template-6oaq5tmqnp9/main/departamentos_en_venta.csv"
+    departamentos = load_data(url)
 
-    # Simulación de tasa de crédito hipotecario (normalmente se obtendría de `www.siii.cl`).
-    tasa_credito = 0.04  # 4% anual
+    # Validar las columnas del archivo CSV
+    if all(column in departamentos.columns for column in expected_columns):
+        # Simulación de tasa de crédito hipotecario (normalmente se obtendría de `www.siii.cl`).
+        tasa_credito = 0.04  # 4% anual
 
-    def calcular_dividendo(precio, pie, tasa, años=25):
-        monto_credito = precio - pie
-        tasa_mensual = tasa / 12
-        meses = años * 12
-        dividendo = (monto_credito * tasa_mensual) / (1 - (1 + tasa_mensual) ** -meses)
-        return dividendo
+        def calcular_dividendo(precio, pie, tasa, años=25):
+            monto_credito = precio - pie
+            tasa_mensual = tasa / 12
+            meses = años * 12
+            dividendo = (monto_credito * tasa_mensual) / (1 - (1 + tasa_mensual) ** -meses)
+            return dividendo
 
-    # Botón para iniciar la búsqueda de departamentos
-    if st.button("Buscar Departamentos"):
-        if not pie_uf or not dividendo_clp:
-            st.error("Por favor, ingresa tanto el pie como el dividendo esperado.")
-        else:
-            # Añadir una columna para el arriendo promedio si no existe.
-            if "Arriendo Promedio" not in departamentos.columns:
-                departamentos["Arriendo Promedio"] = [500, 700]  # Valores ficticios.
+        # Botón para iniciar la búsqueda de departamentos
+        if st.button("Buscar Departamentos"):
+            if not pie_uf or not dividendo_clp:
+                st.error("Por favor, ingresa tanto el pie como el dividendo esperado.")
+            else:
+                # Añadir una columna para el arriendo promedio si no existe.
+                if "Arriendo Promedio" not in departamentos.columns:
+                    departamentos["Arriendo Promedio"] = [500, 700]  # Valores ficticios.
 
-            # Calculamos el dividendo y la rentabilidad.
-            departamentos["Pie (UF)"] = pie_uf
-            departamentos["Dividendo Mensual (UF)"] = departamentos["Precio"].apply(lambda x: calcular_dividendo(x, pie_uf, tasa_credito))
-            departamentos["Dividendo Mensual (CLP)"] = departamentos["Dividendo Mensual (UF)"] * 30000  # Asumimos UF a CLP es 30,000.
-            departamentos["Rentabilidad (%)"] = ((departamentos["Arriendo Promedio"] * 12) / (departamentos["Precio"] * 30000)) * 100
+                # Calculamos el dividendo y la rentabilidad.
+                departamentos["Pie (UF)"] = pie_uf
+                departamentos["Dividendo Mensual (UF)"] = departamentos["Precio"].apply(lambda x: calcular_dividendo(x, pie_uf, tasa_credito))
+                departamentos["Dividendo Mensual (CLP)"] = departamentos["Dividendo Mensual (UF)"] * 30000  # Asumimos UF a CLP es 30,000.
+                departamentos["Rentabilidad (%)"] = ((departamentos["Arriendo Promedio"] * 12) / (departamentos["Precio"] * 30000)) * 100
 
-            # Filtrar por rentabilidad y que el arriendo sea mayor al dividendo.
-            resultados = departamentos[(departamentos["Arriendo Promedio"] > departamentos["Dividendo Mensual (CLP)"])]
+                # Filtrar por rentabilidad y que el arriendo sea mayor al dividendo.
+                resultados = departamentos[(departamentos["Arriendo Promedio"] > departamentos["Dividendo Mensual (CLP)"])]
 
-            # Mostrar resultados.
-            st.write(resultados)
+                # Mostrar resultados.
+                st.write(resultados)
 
-            # Permitir la descarga de los resultados.
-            st.download_button(
-                label="Descargar Resultados",
-                data=resultados.to_csv(index=False).encode('utf-8'),
-                file_name='resultados_departamentos.csv',
-                mime='text/csv'
-            )
+                # Permitir la descarga de los resultados.
+                st.download_button(
+                    label="Descargar Resultados",
+                    data=resultados.to_csv(index=False).encode('utf-8'),
+                    file_name='resultados_departamentos.csv',
+                    mime='text/csv'
+                )
+    else:
+        st.error(f"El archivo CSV debe contener las siguientes columnas: {', '.join(expected_columns)}")
 
     # Crear una sección de chat para interactuar con el usuario
     if prompt := st.chat_input("¿Qué más te gustaría saber?"):
