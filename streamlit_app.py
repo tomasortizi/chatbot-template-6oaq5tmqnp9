@@ -61,7 +61,7 @@ else:
             else:
                 # Añadir una columna para el arriendo promedio si no existe.
                 if "Arriendo Promedio" not in departamentos.columns:
-                    departamentos["Arriendo Promedio"] = [500, 700]  # Valores ficticios.
+                    departamentos["Arriendo Promedio"] = [500000, 700000]  # Valores ficticios.
 
                 # Calculamos el dividendo y la rentabilidad.
                 departamentos["Pie (UF)"] = pie_uf
