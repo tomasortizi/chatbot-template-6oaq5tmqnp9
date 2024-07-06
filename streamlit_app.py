@@ -1,7 +1,5 @@
 import streamlit as st
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
 from openai import OpenAI
 
 # Show title and description.
@@ -47,31 +45,14 @@ else:
         dividendo = (monto_credito * tasa_mensual) / (1 - (1 + tasa_mensual) ** -meses)
         return dividendo
 
-    # Función para obtener valores de arriendo promedio desde portalinmobiliario.cl
-    def obtener_arriendo_promedio(link):
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        response = requests.get(link, headers=headers)
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Ejemplo de extracción de datos (esto debe ajustarse según la estructura real de la página)
-        arriendos = []
-        for tag in soup.find_all("tag_que_contiene_precio"):  # Ajustar el selector
-            precio = tag.get_text().strip()
-            if "CLP" in precio:
-                arriendos.append(int(precio.replace("CLP", "").replace(".", "").strip()))
-        if arriendos:
-            return sum(arriendos) / len(arriendos)
-        return 0
-
     # Botón para iniciar la búsqueda de departamentos
     if st.button("Buscar Departamentos"):
         if not pie_uf or not dividendo_clp:
             st.error("Por favor, ingresa tanto el pie como el dividendo esperado.")
         else:
-            # Buscar valores de arriendo promedio para los departamentos
-            departamentos["Arriendo Promedio"] = departamentos["Link"].apply(obtener_arriendo_promedio)
+            # Añadir una columna para el arriendo promedio si no existe.
+            if "Arriendo Promedio" not in departamentos.columns:
+                departamentos["Arriendo Promedio"] = [500, 700]  # Valores ficticios.
 
             # Calculamos el dividendo y la rentabilidad.
             departamentos["Pie (UF)"] = pie_uf
