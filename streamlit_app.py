@@ -160,4 +160,6 @@ else:
             # Stream the response to the chat and store it in session state.
             with st.chat_message("assistant"):
                 st.markdown(response.choices[0].message['content'])
-            st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message
+            st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message['content']})
+        except Exception as e:
+            st.error(f"Error al generar respuesta de OpenAI: {e}")
