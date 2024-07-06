@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from openai import OpenAI
-from openai.error import OpenAIError
 
 # Show title and description.
 st.title("💬 Chatbot de Inversiones Inmobiliarias en Santiago")
@@ -95,5 +94,4 @@ else:
                 st.markdown(response.choices[0].message['content'])
             st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message['content']})
 
-    except OpenAIError as e:
-        st.error(f"An error occurred: {e}")
+
