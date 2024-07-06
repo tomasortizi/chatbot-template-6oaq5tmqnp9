@@ -27,6 +27,10 @@ else:
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
+     # Definir los nombres de columnas esperados
+    expected_columns = ["Precio", "Metros Cuadrados", "Dormitorios", "Baños", "Link"]
+
+
     # Cargar base de datos de departamentos desde GitHub.
     @st.cache_data
     def load_data(url):
@@ -35,9 +39,6 @@ else:
 
     url = "https://raw.githubusercontent.com/tomasortizi/chatbot-template-6oaq5tmqnp9/main/departamentos_en_venta.csv"
     departamentos = load_data(url)
-
-    # Mostrar columnas del CSV para depuración
-    st.write("Columnas encontradas en el archivo CSV:", list(departamentos.columns))
 
     # Validar las columnas del archivo CSV
     if all(column in departamentos.columns for column in expected_columns):
