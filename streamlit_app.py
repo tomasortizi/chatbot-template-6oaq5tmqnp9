@@ -59,11 +59,11 @@ else:
             if not pie_uf or not dividendo_clp:
                 st.error("Por favor, ingresa tanto el pie como el dividendo esperado.")
             else:
+                pie_uf = float(pie_uf)  # Asegurarse de que pie_uf sea de tipo float
                 # Añadir una columna para el arriendo promedio si no existe.
                 if "Arriendo Promedio" not in departamentos.columns:
                     # Generar valores ficticios basados en el tamaño del DataFrame
                     departamentos["Arriendo Promedio"] = [500000 + i * 10000 for i in range(len(departamentos))]
-
 
                 # Calculamos el dividendo y la rentabilidad.
                 departamentos["Pie (UF)"] = pie_uf
