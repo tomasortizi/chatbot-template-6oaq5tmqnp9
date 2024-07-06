@@ -103,15 +103,20 @@ else:
                             ]
                             for _, row_arriendo in comparables.iterrows():
                                 rentabilidad = ((row_arriendo["Arriendo UF"] - row_venta["Dividendo Mensual (UF)"]) / row_venta["Dividendo Mensual (UF)"]) * 100
-                                resultados_comparativos.append({
+                                resultado = {
                                     "Venta Link": row_venta["Link"],
-                                    "Arriendo Link": row_arriendo["Link"],
                                     "UF/m2 Venta": uf_m2_venta,
-                                    "UF/m2 Arriendo": row_arriendo["UF/m2"],
                                     "Dividendo Mensual (UF)": row_venta["Dividendo Mensual (UF)"],
-                                    "Arriendo Mensual (UF)": row_arriendo["Arriendo UF"],
-                                    "Rentabilidad (%)": rentabilidad
-                                })
+                                    "Rentabilidad (%)": rentabilidad,
+                                    "Arriendo Link": row_arriendo["Link"],
+                                    "Precio Arriendo": row_arriendo["Precio"],
+                                    "Metros Cuadrados Arriendo": row_arriendo["Metros Cuadrados"],
+                                    "Dormitorios Arriendo": row_arriendo["Dormitorios"],
+                                    "Baños Arriendo": row_arriendo["Baños"],
+                                    "Arriendo UF": row_arriendo["Arriendo UF"],
+                                    "UF/m2 Arriendo": row_arriendo["UF/m2"]
+                                }
+                                resultados_comparativos.append(resultado)
 
                         # Convertir los resultados a un DataFrame
                         resultados_df = pd.DataFrame(resultados_comparativos)
@@ -154,4 +159,5 @@ else:
 
             # Stream the response to the chat and store it in session state.
             with st.chat_message("assistant"):
-                st.mark
+                st.markdown(response.choices[0].message['content'])
+            st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message
